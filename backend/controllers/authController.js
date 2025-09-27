@@ -28,12 +28,19 @@ async function login(req, res) {
 }
 
 async function verifyOtpController(req, res) {
-  const { paymentId, otp } = req.body;
-  const payment = await verifyOtp(paymentId, otp);
-  if (!payment) {
+  const { paymentId, otp, otpToken } = req.body;
+
+  try {
+    const decoded = jwt.verify(otpToken, process.env.OTP_SECRET);
+
+    if (decoded.paymentId !== paymentId || decoded.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    res.json({ message: 'OTP verified', paymentId });
+  } catch (err) {
     return res.status(400).json({ message: 'Invalid or expired OTP' });
   }
-  res.json({ message: 'OTP verified' });
 }
 
 async function getUserProfile(req, res) {
@@ -48,6 +55,7 @@ async function getUserProfile(req, res) {
   res.json({
     customer_id: customer.customer_id,
     full_name: customer.full_name,
+    username: customer.username,
     phone_number: customer.phone_number,
     email: customer.email,
     address: customer.address,

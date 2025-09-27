@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>iBanking - Tuition</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
     header { background: #b30000; color: white; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
@@ -25,6 +28,32 @@
     .btn-home { background: #b30000; color: white; margin-left: 10px; }
     .btn-download:hover { background: #1e3fa8; }
     .btn-home:hover { background: #8b0000; }
+    .top-nav {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    gap: 20px;
+    border-bottom: 2px solid #ccc;
+    }
+
+    .top-nav button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ffffff;
+      color: rgb(0, 0, 0);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .top-nav button:hover {
+      background: #8b0000;
+    }
+
+    .top-nav .active {
+      background: #ff0606;
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -33,12 +62,17 @@
       <h1 style="margin: 0;">iBanking</h1>
       <div>
         <p style="margin: 0;color: #ada9a9;">Welcome back</p>
-        <p style="margin: 0; font-weight: bold; font-size: 25px;">Nguyen Van A</p>
+        <p id="user-name" style="margin: 0; font-weight: bold; font-size: 25px;">Loading...</p>
       </div>
     </div>
+    <nav class="top-nav">
+      <button onclick="goToPage('account.html')">Account Info</button>
+      <button onclick="goToPage('history.html')">History</button>
+      <button class="active">Tuition Payment</button>
+    </nav>
     <div class="header-right">
-      <div class="balance">Balance: 5,000,000 VND</div>
-      <button class="logout-btn" onclick="window.location.href='login.html'">Log out</button>
+      <div id="user-balance" class="balance">Balance: Loading...</div>
+      <button class="logout-btn" onclick="logout()">Log out</button>
     </div>
   </header>
 
@@ -55,19 +89,111 @@
 
       <div class="invoice-box">
         <h3>Invoice</h3>
-        <table>
+        <!-- <table>
           <tr><td><b>Transaction ID</b></td><td>TXN202509140001</td></tr>
           <tr><td><b>Student Name</b></td><td>Đặng Bảo Khang</td></tr>
           <tr><td><b>Student ID</b></td><td>522H0003</td></tr>
           <tr><td><b>Amount Paid</b></td><td>10,000,000 VND</td></tr>
           <tr><td><b>Date</b></td><td>14/09/2025 21:35</td></tr>
           <tr><td><b>Status</b></td><td style="color:green;font-weight:bold;">Success</td></tr>
-        </table>
+        </table> -->
+        <table id="invoiceTable"></table>
+
       </div>
 
-      <button class="btn btn-download">Download Invoice</button>
+      <button class="btn btn-download" onclick="downloadInvoice()">Download Invoice</button>
       <button class="btn btn-home" onclick="window.location.href='index.html'">Back to Home</button>
     </div>
   </div>
+  <table id="invoiceTable"></table>
+
+  <script>
+    function loadHeader() {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+
+      if (!token || !user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const currentUser = JSON.parse(user);
+        document.getElementById('user-name').textContent = currentUser.full_name;
+        document.getElementById('user-balance').textContent = 
+          `Balance: ${formatCurrency(currentUser.balance)}`;
+      } catch (err) {
+        console.error("Error", err);
+        logout();
+      }
+    }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+
+  function goToPage(page) {
+    window.location.href = page;
+  }
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount) + " VND";
+  }
+
+  window.addEventListener('DOMContentLoaded', loadHeader);
+    window.addEventListener('DOMContentLoaded', () => {
+    let invoice = null;
+    const invoiceData = localStorage.getItem('invoice');
+    if (invoiceData) {
+      invoice = JSON.parse(invoiceData);
+      console.log("Invoice in completion page:", invoice);
+    } else {
+      alert("No invoice data found!");
+      window.location.href = 'index.html';
+      return;
+    }
+
+    document.getElementById("invoiceTable").innerHTML = `
+      <tr><td><b>Transaction ID</b></td><td>${invoice.paymentId}</td></tr>
+      <tr><td><b>Student Name</b></td><td>${invoice.studentName}</td></tr>
+      <tr><td><b>Student ID</b></td><td>${invoice.studentId}</td></tr>
+      <tr><td><b>Amount Paid</b></td><td>${invoice.amount.toLocaleString()} VND</td></tr>
+      <tr><td><b>Date</b></td><td>${new Date(invoice.paymentDate).toLocaleString()}</td></tr>
+      <tr><td><b>Status</b></td><td style="color:green;font-weight:bold;">${invoice.status}</td></tr>
+      <tr><td><b>Transfer Message</b></td><td>${invoice.message || '—'}</td></tr>
+    `;
+    });
+    async function downloadInvoice() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const invoiceData = JSON.parse(localStorage.getItem("invoice") || "{}");
+
+      doc.setFontSize(25);
+      doc.text("Tuition Payment Invoice", 14, 20);
+
+      doc.setFontSize(14);
+      doc.text(`Date: ${new Date(invoiceData.paymentDate).toLocaleString()}`, 14, 30);
+
+      doc.autoTable({
+        startY: 45,
+        head: [['Field', 'Value']],
+        body: [
+          ['Transaction ID', invoiceData.paymentId],
+          ['Student Name', invoiceData.studentName],
+          ['Student ID', invoiceData.studentId],
+          ['Amount Paid', invoiceData.amount.toLocaleString() + " VND"],
+          ['Status', invoiceData.status],
+          ['Transfer Message', invoiceData.message || '—————————————————']
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [179, 0, 0] },  
+      });
+
+      doc.save(`Invoice_${invoiceData.paymentId}.pdf`);
+    }
+
+  </script>
 </body>
 </html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>iBanking - Tuition</title>
+  <style>
+    body { 
+        font-family: Arial, sans-serif; 
+        background: #f5f5f5; 
+        margin: 0; }
+    header { 
+        background: #b30000;
+        color: white; 
+        padding: 10px 20px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+    }
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 50px;
+    }
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .balance {
+        font-weight: bold;
+        font-size: 16px;
+    }
+    .logout-btn {
+        padding: 6px 12px;
+        background: white;
+        color: #b30000;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .logout-btn:hover {
+        background: #f2f2f2;
+    }
+
+    .container { 
+        display: flex; 
+        padding: 20px; 
+        }
+    .main { 
+        flex: 3; 
+        background: white; 
+        padding: 20px; 
+        border-radius: 8px; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    }
+    .sidebar { 
+        flex: 1; 
+        margin-left: 20px; 
+    }
+    .help-box { 
+        background: white; 
+        padding: 15px; 
+        border-radius: 8px; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    }
+    h2 { 
+        margin-top: 0; 
+    }
+    label { 
+        display: block; 
+        margin-top: 14px; 
+        font-weight: bold; 
+    }
+    input, select { 
+        width: 100%; 
+        padding: 10px; 
+        margin-top: 5px; 
+        border: 1px solid #2a54dd; 
+        border-radius: 5px; 
+    }
+    input[disabled] {
+        background: #eef3ff;      
+        color: #003366;         
+        font-weight: bold;
+    }
+    .search-box {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .search-btn {
+        padding: 10px 15px;
+        background: #2a54dd;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .search-btn:hover {
+        background: #1e3fa8;
+    }
+    button { 
+        margin-top: 15px; 
+        padding: 10px 15px; 
+        background: #b30000; 
+        color: white; 
+        border: none; 
+        border-radius: 4px; 
+        cursor: pointer; 
+    }
+    button:hover { 
+        background: #8b0000; 
+    }
+    .steps { 
+        display: flex; 
+        justify-content: space-between; 
+        margin-bottom: 20px; 
+    }
+    .step { 
+        flex: 1; 
+        padding-top: 20px;
+        text-align: center; 
+        font-weight: bold; 
+        font-size: 20px;
+    }
+    .active { color: #b30000; }
+    fieldset{
+      margin-top: 5px;
+      padding-right: 30px;
+      padding-bottom: 30px ;
+      font-size: 15px;
+      border: 3px solid #000000; 
+      border-radius: 6px; 
+    }
+    .top-nav {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    gap: 20px;
+    border-bottom: 2px solid #ccc;
+    }
+
+    .top-nav button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ffffff;
+      color: rgb(0, 0, 0);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .top-nav button:hover {
+      background: #8b0000;
+    }
+
+    .top-nav .active {
+      background: #ff0606;
+      color: #ffffff;
+    }
+    .container { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #b30000; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 16px; }
+    td { padding: 12px; border-bottom: 1px solid #ddd; }
+    td:first-child { font-weight: bold; color: #444; width: 200px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1 style="margin: 0;">iBanking</h1>
+      <div>
+        <p style="margin: 0;color: #ada9a9;">Welcome back</p>
+        <p id="user-name" style="margin: 0; font-weight: bold; font-size: 25px;">Loading...</p>
+      </div>
+    </div>
+    <nav class="top-nav">
+      <button class="active" onclick="goToPage('account.html')">Account Info</button>
+      <button onclick="goToPage('history.html')">History</button>
+      <button onclick="goToPage('index.html')">Tuition Payment</button>
+    </nav>
+    <div class="header-right">
+      <div id="user-balance" class="balance">Balance: Loading...</div>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </header>
+  <div class="container">
+    <h2>Customer Information</h2>
+    <table>
+      <tr><td>Full Name</td><td id="full-name">Loading...</td></tr>
+      <tr><td>Username</td><td id="username">Loading...</td></tr>
+      <tr><td>Email</td><td id="email">Loading...</td></tr>
+      <tr><td>Balance</td><td id="balance">Loading...</td></tr>
+      <tr><td>Phone Number</td><td id="phone">Loading...</td></tr>
+      <tr><td>Address</td><td id="address">Loading...</td></tr>
+    </table>
+  </div>
+
+  <script>
+    function loadHeader() {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+
+      if (!token || !user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const currentUser = JSON.parse(user);
+        document.getElementById('user-name').textContent = currentUser.full_name ;
+        document.getElementById('full-name').textContent = currentUser.full_name;
+        document.getElementById('username').textContent = currentUser.username;
+        document.getElementById('email').textContent = currentUser.email;
+        document.getElementById('balance').textContent = formatCurrency(currentUser.balance);
+        document.getElementById('phone').textContent = currentUser.phone_number;
+        document.getElementById('address').textContent = currentUser.address;
+      } catch (err) {
+        logout();
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    function goToPage(page) {
+      window.location.href = page;
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('vi-VN').format(amount) + " VND";
+    }
+
+    window.addEventListener('DOMContentLoaded', loadHeader);
+  </script>
+</body>
+</html>
+</body>
+</html>

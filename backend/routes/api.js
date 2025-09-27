@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { login, verifyOtpController, getUserProfile } = require('../controllers/authController');
+const { login, getUserProfile } = require('../controllers/authController');
 const { searchTuition, getTuitionById, createTuitionPayment, completeTuitionPayment } = require('../controllers/paymentController');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
+
+const { getPaymentsByCustomer } = require('../models/paymentModel'); 
 
 // Middleware auth
 const authMiddleware = (req, res, next) => {
@@ -26,11 +28,17 @@ router.get('/profile', authMiddleware, getUserProfile);
 router.get('/tuition/student/:studentId', authMiddleware, searchTuition);
 router.get('/tuition/:tuitionFeeId', authMiddleware, getTuitionById);
 
-// Payment routes
-router.post('/payment/create', authMiddleware, createTuitionPayment);
-router.post('/payment/complete', authMiddleware, completeTuitionPayment);
-router.post('/otp/verify', authMiddleware, verifyOtpController);
+router.post('/tuition/create-payment', authMiddleware, createTuitionPayment);
+router.post('/tuition/complete-payment', authMiddleware, completeTuitionPayment);
 
-
+router.get('/history', authMiddleware, async (req, res) => {
+  try {
+    const customerId = req.user.customerId; 
+    const payments = await getPaymentsByCustomer(customerId);
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;

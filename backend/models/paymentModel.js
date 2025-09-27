@@ -1,6 +1,4 @@
 const { mongoose } = require('../config/db');
-
-// Bảng phụ Payment để quản lý mối quan hệ nhiều-nhiều giữa Customer và Tuition
 const paymentSchema = new mongoose.Schema({
   payment_id: {
     type: String,
@@ -31,9 +29,15 @@ const paymentSchema = new mongoose.Schema({
     default: 'PENDING',
     enum: ['PENDING', 'COMPLETED', 'FAILED', 'CANCELLED']
   },
+  message: {
+    type: String,
+    maxlength: 200,
+    default: ''
+  }
 }, {
   timestamps: true
 });
+
 
 // Index để tối ưu hóa truy vấn
 paymentSchema.index({ customer_id: 1 });
@@ -52,40 +56,27 @@ async function generatePaymentId() {
   return `PAY${dateStr}${String(count + 1).padStart(4, '0')}`;
 }
 
-async function createPayment(customerId, tuitionFeeId, amount) {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
+async function createPayment(customerId, tuitionFeeId, amount, message = '') {
   const paymentId = await generatePaymentId();
 
   const payment = new Payment({
     payment_id: paymentId,
     customer_id: customerId,
     tuition_fee_id: tuitionFeeId,
-    amount: amount,
-    otp: otp,
-    otp_expiry: otpExpiry,
-    transaction_reference: `TXN_${paymentId}`
+    amount,
+    message, 
+    status: 'PENDING'
   });
 
-  const savedPayment = await payment.save();
-  return { paymentId: savedPayment.payment_id, otp, otpExpiry };
+  await payment.save();
+  return { paymentId };
 }
 
-async function verifyOtp(paymentId, otp) {
-  return await Payment.findOne({
-    payment_id: paymentId,
-    otp: otp,
-    otp_expiry: { $gt: new Date() }
-  });
-}
 
 async function completePayment(paymentId) {
   return await Payment.findOneAndUpdate(
     { payment_id: paymentId },
-    { 
-      status: 'COMPLETED',
-      $unset: { otp: 1, otp_expiry: 1 }
-    },
+    { status: 'COMPLETED' },
     { new: true }
   );
 }
@@ -105,7 +96,6 @@ async function getPaymentsByTuition(tuitionFeeId) {
 module.exports = { 
   Payment, 
   createPayment, 
-  verifyOtp, 
   completePayment, 
   getPaymentById, 
   getPaymentsByCustomer, 

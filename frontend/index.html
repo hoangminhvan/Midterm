@@ -133,6 +133,33 @@
       border: 3px solid #000000; 
       border-radius: 6px; 
     }
+    .top-nav {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    gap: 20px;
+    border-bottom: 2px solid #ccc;
+    }
+
+    .top-nav button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ffffff;
+      color: rgb(0, 0, 0);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .top-nav button:hover {
+      background: #8b0000;
+    }
+
+    .top-nav .active {
+      background: #ff0606;
+      color: #ffffff;
+    }
+    
   </style>
 </head>
 <body>
@@ -144,12 +171,18 @@
         <p id="user-name" style="margin: 0; font-weight: bold; font-size: 25px;">Loading...</p>
       </div>
     </div>
+    <nav class="top-nav">
+      <button onclick="goToPage('account.html')">Account Info</button>
+      <button onclick="goToPage('history.html')">History</button>
+      <button class="active">Tuition Payment</button>
+    </nav>
     <div class="header-right">
       <div id="user-balance" class="balance">Balance: Loading...</div>
       <button class="logout-btn" onclick="logout()">Log out</button>
     </div>
   </header>
-
+  
+  
   <div class="steps">
     <div class="step active">1. Select</div>
     <div class="step">2. OTP</div>
@@ -170,13 +203,16 @@
           <input type="text" id="payer-email" value="Loading..." disabled>
         </fieldset>
 
-        <fieldset>
+        <fieldset >
           <legend>Tuition Information</legend>
           <label>Student ID </label>
           <div class="search-box">
             <input type="text" id="student-id-input" placeholder="Enter Student ID">
             <button type="button" class="search-btn" onclick="searchTuition()">Search</button>
+            <div id="payment-info">
+            </div>
           </div>
+          <div id="tuition-message" style="color: red; margin-top: 5px;"></div>
           <label>Student Name</label>
           <input type="text" id="student-name" disabled placeholder="Displayed automatically">
           <label>Amount Due</label>
@@ -187,16 +223,16 @@
           <legend>Payment Information</legend>
         
           <label>Transaction ID</label>
-          <input type="text" value="TXN202509140001" disabled>
+          <input type="text" value="" disabled placeholder="Displayed automatically" >
 
           <label>Student Name</label>
-          <input type="text" value="Đặng Bảo Khang" disabled>
+          <input type="text" value="" disabled placeholder="Displayed automatically">
         
           <label>Transfer Content</label>
-          <input type="text" value="Tuition fee - 522H0003" disabled>
+          <input type="text" id="transferContent" value="" disabled placeholder="Displayed automatically">
 
           <label>Amount</label>
-          <input type="text" value="10,000,000 VND" disabled>
+          <input type="text" value="" disabled placeholder="Displayed automatically">
         
           <div style="display: flex; align-items: center;white-space: nowrap; margin-top:10px;">
             <input type="checkbox" id="terms">
@@ -205,6 +241,7 @@
         </fieldset>
         
         <button type="button" onclick="proceedToOTP()">Confirm Transaction</button>
+
       </form>
     </div>
 
@@ -222,6 +259,7 @@
   </div>
 
   <script>
+
     let currentUser = null;
     let currentTuition = null;
 
@@ -229,7 +267,9 @@
     window.addEventListener('DOMContentLoaded', function() {
       checkAuth();
     });
-
+    function goToPage(page) {
+      window.location.href = page;
+    }
     function checkAuth() {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
@@ -300,8 +340,17 @@
 
     async function searchTuition() {
       const studentId = document.getElementById('student-id-input').value.trim();
+      const tuitionMessage = document.getElementById('tuition-message');
+      const paymentInfo = document.getElementById('payment-info');
+
+      tuitionMessage.textContent = '';
+      paymentInfo.innerHTML = '';
+      currentTuition = null;
+
       if (!studentId) {
-        alert('Please enter Student ID');
+        tuitionMessage.textContent = 'Please enter Student ID';
+        clearTuitionInfo();
+        clearPaymentInfo();
         return;
       }
 
@@ -316,31 +365,51 @@
 
         if (response.ok) {
           const tuitionData = await response.json();
+
           if (tuitionData && tuitionData.length > 0) {
-            currentTuition = tuitionData[0]; // Lấy tuition đầu tiên
+            const tuition = tuitionData[0];
+
+            if (tuition.status === 'PAID') {
+              tuitionMessage.textContent = 'Student tuition has already been paid .';
+              clearTuitionInfo();
+              clearPaymentInfo();
+              return;
+            }
+
+            currentTuition = tuition;
             document.getElementById('student-name').value = currentTuition.student_name;
             document.getElementById('amount-due').value = formatCurrency(currentTuition.tuition_amount);
-            
-            // Cập nhật thông tin thanh toán
             updatePaymentInfo();
+
           } else {
-            alert('No tuition found for this student ID');
+            tuitionMessage.textContent = 'There are no tuition fees for this student or invalid StudentId';
             clearTuitionInfo();
+            clearPaymentInfo();
           }
         } else {
           const errorData = await response.json();
-          alert(errorData.message || 'Error searching tuition information');
-          clearTuitionInfo();
+          tuitionMessage.textContent = errorData.message || 'Error searching tuition information';
         }
       } catch (error) {
         console.error('Error searching tuition:', error);
-        alert('Network error. Please try again.');
+        tuitionMessage.textContent = 'Network error. Please try again.';
+      }
+    }
+
+    function clearPaymentInfo() {
+      const inputs = document.querySelectorAll('fieldset:nth-of-type(3) input[type="text"]');
+      inputs.forEach(input => {
+        input.value = '';
+      });
+
+      const termsCheckbox = document.querySelector('fieldset:nth-of-type(3) input[type="checkbox"]');
+      if (termsCheckbox) {
+        termsCheckbox.checked = false;
       }
     }
 
     function updatePaymentInfo() {
       if (currentTuition) {
-        // Cập nhật thông tin giao dịch
         const transactionId = 'TXN' + new Date().getFullYear() + 
                              String(new Date().getMonth() + 1).padStart(2, '0') + 
                              String(new Date().getDate()).padStart(2, '0') + 
@@ -375,7 +444,7 @@
     }
 
     // Kiểm tra form trước khi chuyển sang OTP
-    function proceedToOTP() {
+    async  function proceedToOTP() {
       if (!currentTuition) {
         alert('Please search and select tuition information first');
         return;
@@ -386,10 +455,36 @@
         alert('Please agree to the terms and conditions');
         return;
       }
+      try {
+        const token = localStorage.getItem('token');
+        const messageTransaction = document.getElementById("transferContent").value;
 
-      // Lưu thông tin tuition để sử dụng ở trang OTP
-      localStorage.setItem('currentTuition', JSON.stringify(currentTuition));
-      window.location.href = 'otp.html';
+        const response = await fetch('/api/tuition/create-payment', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tuitionFeeId: currentTuition.tuition_fee_id ,messageTransaction}) 
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('paymentId', data.paymentId);
+          localStorage.setItem('otpToken', data.otpToken);
+          localStorage.setItem('currentTuition', JSON.stringify(data.tuition));
+
+          alert('OTP has been sent to your email');
+          window.location.href = 'otp.html';
+        } else {
+          alert(data.message || 'Error sending OTP');
+        }
+      } catch (error) {
+        console.error('Error creating payment:', error);
+        alert('Network error. Please try again.');
+      }
+
+      
     }
   </script>
 </body>

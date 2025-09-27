@@ -48,6 +48,16 @@ async function initializeDatabase() {
         email: '522H0003@student.edu.vn',
         address: 'HCMC',
         available_balance: 20000000
+      },
+      {
+        customer_id: 'CUST004',
+        username: 'minh',
+        password: bcrypt.hashSync('123123', 10),
+        full_name: 'Hoang Van Minh',
+        phone_number: '0901234567',
+        email: 'vamila2710@gmail.com',
+        address: 'HCMC',
+        available_balance: 60000000
       }
     ];
     

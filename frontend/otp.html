@@ -126,6 +126,32 @@
     .resend a:hover {
         text-decoration: underline;
     }
+    .top-nav {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    gap: 20px;
+    border-bottom: 2px solid #ccc;
+    }
+
+    .top-nav button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ffffff;
+      color: rgb(0, 0, 0);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .top-nav button:hover {
+      background: #8b0000;
+    }
+
+    .top-nav .active {
+      background: #ff0606;
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -135,12 +161,17 @@
       <h1 style="margin: 0;">iBanking</h1>
       <div>
         <p style="margin: 0;color: #ada9a9;">Welcome back</p>
-        <p style="margin: 0; font-weight: bold; font-size: 25px;">Nguyen Van A</p>
+        <p id="user-name" style="margin: 0; font-weight: bold; font-size: 25px;">Loading...</p>
       </div>
     </div>
+    <nav class="top-nav">
+      <button onclick="goToPage('account.html')">Account Info</button>
+      <button onclick="goToPage('history.html')">History</button>
+      <button class="active">Tuition Payment</button>
+    </nav>
     <div class="header-right">
-      <div class="balance">Balance: 5,000,000 VND</div>
-      <button class="logout-btn" onclick="window.location.href='login.html'">Log out</button>
+      <div id="user-balance" class="balance">Balance: Loading...</div>
+      <button class="logout-btn" onclick="logout()">Log out</button>
     </div>
   </header>
 
@@ -164,7 +195,7 @@
         <input type="text" maxlength="1">
         <input type="text" maxlength="1">
       </div>
-      <button class="login-btn" onclick="window.location.href='completion.html'">Login</button>
+      <button class="login-btn" onclick="verifyOtp()">Confirm</button>
       <div class="resend">
         Didn’t receive an OTP? <a href="#">Resend</a>
       </div>
@@ -172,7 +203,42 @@
   </div>
 
   <script>
-    // Auto focus to next input when typing OTP
+
+  function loadHeader() {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+
+    if (!token || !user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    try {
+      const currentUser = JSON.parse(user);
+      document.getElementById('user-name').textContent = currentUser.full_name;
+      document.getElementById('user-balance').textContent = 
+        `Balance: ${formatCurrency(currentUser.balance)}`;
+    } catch (err) {
+      console.error("Error", err);
+      logout();
+    }
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+
+  function goToPage(page) {
+    window.location.href = page;
+  }
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN').format(amount) + " VND";
+  }
+
+  // chạy ngay khi trang load
+  window.addEventListener('DOMContentLoaded', loadHeader);
     const otpInputs = document.querySelectorAll('.otp-inputs input');
     
     otpInputs.forEach((input, index) => {
@@ -189,10 +255,51 @@
       });
     });
 
-    // Focus on first input when page loads
     window.addEventListener('load', function() {
       otpInputs[0].focus();
     });
+    async function verifyOtp() {
+      const otpInputs = document.querySelectorAll('.otp-inputs input');
+  
+      let otp = '';
+      otpInputs.forEach(input => {
+        otp += input.value;
+      });
+
+      if (otp.length !== 6) {
+        alert("Please enter all 6 digits of OTP!");
+        return;
+      }
+
+      console.log("OTP entered:", otp);
+      const paymentId = localStorage.getItem('paymentId');
+      const otpToken = localStorage.getItem('otpToken');
+      const token = localStorage.getItem('token');
+
+      try {
+        const response = await fetch('/api/tuition/complete-payment', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ paymentId, otp, otpToken })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          
+          alert('Payment success!');
+          localStorage.setItem('invoice', JSON.stringify(data.invoice));
+          window.location.href = 'completion.html'; 
+        } else {
+          alert(data.message || 'Invalid OTP');
+        }
+      } catch (error) {
+        console.error('Error verifying OTP:', error);
+        alert('Network error. Please try again.');
+    }
+}
   </script>
 </body>
 </html>
